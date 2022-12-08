@@ -1,0 +1,121 @@
+'''
+Author: Uzair Ahmad
+12/7/2022
+'''
+class FPTree:
+    def __init__(self):
+        self.header_table = {}
+        self.root = FPTree.Node(fpTree=self, word=None, freq=0)
+
+    def add_node(self, prev_word, curr_word):
+        curr_word_found = curr_word in fpTree.header_table.keys()
+        prev_word_found = prev_word in fpTree.header_table.keys()
+        if curr_word_found:
+            fpTree.header_table[curr_word][0] += 1          # update frequency in header_table
+            curr_word_node = fpTree.header_table[curr_word][1]
+            if prev_word == curr_word_node.parent.word:
+                fpTree.header_table[curr_word][1].freq += 1 # update freq in node
+            else:
+                node = fpTree.Node(fpTree, curr_word, 1)  # first occurrence in this context, create a node
+                while curr_word_node.next is not None:
+                    curr_word_node = curr_word_node.next
+                curr_word_node.next = node                # link to next of current_word_node
+                if prev_word is None:
+                    fpTree.root.add_child(node)
+                else:
+                    prev_word_node = fpTree.header_table[prev_word][1]
+                    while prev_word_node.next is not None:
+                        prev_word_node = prev_word_node.next
+                    prev_word_node.add_child(node)
+        else: # current word not found in the header_table
+            node = fpTree.Node(fpTree, curr_word, 1)    # first occurrence, create a node
+            fpTree.header_table[curr_word] = [1, node]  # add to header_table
+            if not prev_word_found:
+                fpTree.root.add_child(node)             # first occurence ever, add to root
+            else:
+                fpTree.header_table[prev_word][1].add_child(node)
+
+    class Node:
+        def __init__(self, fpTree, word, freq, next=None):
+            self.fpTree = fpTree
+            self.word = word
+            self.freq = freq
+            self.next = next
+            self.child_nodes = []
+
+        def add_child(self, child_node): # self is parent_node
+            self.child_nodes.append(child_node)
+            child_node.set_parent(self)
+
+        def set_parent(self, parent_node):
+            self.parent = parent_node
+
+        def set_next(self, next_node):
+            self.next = next_node
+
+    def __print_branch(self, node):
+        # print('  ' + node.word + str(node.freq))
+        branch = '\t' + node.word + str(node.freq) + '-->'
+        parent = node.parent
+        while parent.word is not None:
+            branch += parent.word + str(parent.freq) + '-->'
+            parent = parent.parent
+        print(branch + 'ROOT')
+        if node.next is not None:
+            self.__print_branch(node.next)
+
+    def display(self):
+        for word, t in self.header_table.items():
+            node_freq = t[0]
+            node = t[1]
+            print(word + str(node_freq))
+            self.__print_branch(node)
+
+def data_prep():
+    data = [
+        ['f', 'a', 'c', 'd', 'g', 'i', 'm', 'p'],
+        ['a', 'b', 'c', 'f', 'l', 'm', 'o'],
+        ['b', 'f', 'h', 'j', 'o'],
+        ['b', 'c', 'k', 's', 'p'],
+        ['a', 'f', 'c', 'e', 'l', 'p', 'm', 'n']
+    ]
+    word_freq_dict = {}
+    for doc in data:
+        for word in doc:
+            if word in word_freq_dict:
+                word_freq_dict[word] += 1
+            else:
+                word_freq_dict[word] = 1
+    word_freq_dict = dict(sorted(word_freq_dict.items(), key=lambda item: item[1], reverse=True))
+    print(word_freq_dict)
+    ordered_vocab = [word for word, freq in word_freq_dict.items() if freq > 2]
+
+    data_ordered = []
+    for doc in data:
+        doc = sorted(doc)
+        ordered_doc = [None for word in ordered_vocab]
+        for word in doc:
+            if word in ordered_vocab:
+                ordered_doc[ordered_vocab.index(word)] = word
+        data_ordered.append([ordered_word for ordered_word in ordered_doc if ordered_word is not None])
+
+    print(data_ordered)
+
+    data_ordered = [['f', 'c', 'a', 'm', 'p'],
+                    ['f', 'c', 'a', 'b', 'm'],
+                    ['f', 'b'],
+                    ['c', 'b', 'p'],
+                    ['f', 'c', 'a', 'm', 'p']]
+    return data_ordered
+
+if __name__ == '__main__':
+    fpTree = FPTree()
+    data_ordered = data_prep()
+    for ordered_doc in data_ordered:
+        print(ordered_doc)
+        prev_word = None
+        for curr_word in ordered_doc:
+            fpTree.add_node(prev_word, curr_word)
+            prev_word = curr_word
+
+    fpTree.display()
